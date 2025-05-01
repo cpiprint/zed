@@ -135,12 +135,7 @@ pub fn init(cx: &mut App) {
                             }
                         };
                     println!("vscode shortcuts: {:#?}", vscode);
-                    let x = cx
-                        .update(move |_, cx| {
-                            let keyboard_mapper = cx.keyboard_mapper();
-                            vscode.parse_shortcuts(keyboard_mapper);
-                        })
-                        .unwrap();
+                    let x = vscode.parse_shortcuts();
 
                     // let prompt = {
                     //     let prompt = cx.prompt(
