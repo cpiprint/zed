@@ -156,7 +156,7 @@ impl VsCodeShortcuts {
                 .unwrap_or_default()
                 .to_string();
             // TODO: vscode_shortcut_command_to_zed_action
-            let Ok(action) = serde_json_lenient::from_str(command) else {
+            let Ok(action) = serde_json_lenient::from_str(&format!(r#""{}""#, command)) else {
                 skipped.push((
                     shortcut.to_string(),
                     format!("Unable to parse command: {}", command),
@@ -287,7 +287,7 @@ mod tests {
         [
             {
                 "key": "ctrl+shift+a",
-                "command": "list.focusFirst",
+                "command": "list.focusFirst", // we are unable to check whether this is a valid command
             },
             {
                 "key": "ctrl+shift+=",
@@ -298,7 +298,7 @@ mod tests {
         let shortcuts = VsCodeShortcuts::from_str(content).unwrap();
         assert_eq!(shortcuts.content.len(), 2);
         let result = shortcuts.parse_shortcuts(&keyboard_mapper);
-        assert_eq!(result.len(), 2);
+        assert_eq!(result.len(), 0);
         println!("result: {:#?}", result);
     }
 }
