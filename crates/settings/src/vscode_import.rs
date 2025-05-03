@@ -1231,6 +1231,8 @@ fn vscode_shortcut_command_to_zed_action<'t, 's>(
     Some((action, context))
 }
 
+fn serialize_actions() {}
+
 #[cfg(test)]
 mod tests {
     use gpui::TestKeyboardMapper;
