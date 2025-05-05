@@ -1166,11 +1166,10 @@ fn serialize_all(
 #[cfg(test)]
 mod tests {
     use collections::HashMap;
-    use gpui::TestKeyboardMapper;
 
     use crate::vscode_import::serialize_all;
 
-    use super::{VsCodeShortcuts, ZedBindingContent};
+    use super::ZedBindingContent;
 
     fn check_serialization_result(result: String, expected: &str) {
         let mut new_result = String::new();
@@ -1302,6 +1301,9 @@ mod tests {
 
     #[test]
     fn test_load_vscode_shortcuts() {
+        use super::VsCodeShortcuts;
+        use gpui::TestKeyboardMapper;
+
         let keyboard_mapper = TestKeyboardMapper::new();
         let content = r#"
         [
