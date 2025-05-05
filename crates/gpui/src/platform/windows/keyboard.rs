@@ -10,7 +10,6 @@ use windows_core::HSTRING;
 
 use crate::{
     Modifiers, PlatformKeyboardLayout, PlatformKeyboardMapper, ScanCode, is_alphabetic_key,
-    is_immutable_key,
 };
 
 pub(crate) struct WindowsKeyboardLayout {
@@ -65,7 +64,7 @@ impl PlatformKeyboardMapper for WindowsKeyboardMapper {
     }
 
     fn get_shifted_key(&self, key: &str) -> Result<Option<String>> {
-        if is_immutable_key(key) {
+        if key.chars().count() != 1 {
             return Ok(None);
         }
         if is_alphabetic_key(key) {
