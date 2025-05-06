@@ -1172,7 +1172,7 @@ mod tests {
 
     use crate::vscode_import::serialize_all;
 
-    use super::ZedBindingContent;
+    use super::{VsCodeShortcuts, ZedBindingContent};
 
     fn check_serialization_result(result: String, expected: &str) {
         let mut new_result = String::new();
@@ -1303,9 +1303,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(not(target_os = "linux"))]
     fn test_load_vscode_shortcuts() {
-        use super::VsCodeShortcuts;
         use gpui::TestKeyboardMapper;
 
         let keyboard_mapper = TestKeyboardMapper::new();
