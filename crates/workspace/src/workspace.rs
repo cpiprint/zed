@@ -1931,7 +1931,7 @@ impl Workspace {
             let project_path = abs_path.and_then(|abs_path| {
                 this.update(cx, |this, cx| {
                     this.project.update(cx, |project, cx| {
-                        project.find_or_create_worktree(abs_path, true, cx)
+                        project.find_or_create_worktree(todo!("TODO kb"), abs_path, true, cx)
                     })
                 })
                 .ok()
@@ -2508,7 +2508,7 @@ impl Workspace {
         cx: &mut App,
     ) -> Task<Result<(Entity<Worktree>, ProjectPath)>> {
         let entry = project.update(cx, |project, cx| {
-            project.find_or_create_worktree(abs_path, visible, cx)
+            project.find_or_create_worktree(todo!("TODO kb"), abs_path, visible, cx)
         });
         cx.spawn(async move |cx| {
             let (worktree, path) = entry.await?;
@@ -5174,8 +5174,11 @@ impl Workspace {
                     project
                         .breakpoint_store()
                         .update(cx, |breakpoint_store, cx| {
-                            breakpoint_store
-                                .with_serialized_breakpoints(serialized_workspace.breakpoints, cx)
+                            breakpoint_store.with_serialized_breakpoints(
+                                todo!("TODO kb"),
+                                serialized_workspace.breakpoints,
+                                cx,
+                            )
                         })
                 })?
                 .await;
@@ -7711,7 +7714,7 @@ mod tests {
         // Add a project folder
         project
             .update(cx, |project, cx| {
-                project.find_or_create_worktree("root2", true, cx)
+                project.find_or_create_worktree(None, "root2", true, cx)
             })
             .await
             .unwrap();

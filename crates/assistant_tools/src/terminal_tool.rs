@@ -811,7 +811,7 @@ mod tests {
 
         project
             .update(cx, |project, cx| {
-                project.create_worktree(tree.path().join("other-project"), true, cx)
+                project.create_worktree(None, tree.path().join("other-project"), true, cx)
             })
             .await
             .unwrap();

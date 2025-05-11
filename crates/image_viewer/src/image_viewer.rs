@@ -229,7 +229,7 @@ impl SerializableItem for ImageView {
 
             let (worktree, relative_path) = project
                 .update(cx, |project, cx| {
-                    project.find_or_create_worktree(image_path.clone(), false, cx)
+                    project.find_or_create_worktree(todo!("TODO kb"), image_path.clone(), false, cx)
                 })?
                 .await
                 .context("Path not found")?;

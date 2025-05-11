@@ -337,7 +337,7 @@ impl LineBreakpoint {
                         let task = weak
                             .update(cx, |this, cx| {
                                 this.worktree_store.update(cx, |this, cx| {
-                                    this.find_or_create_worktree(path, false, cx)
+                                    this.find_or_create_worktree(todo!("TODO kb"), path, false, cx)
                                 })
                             })
                             .ok()?;

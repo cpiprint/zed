@@ -68,7 +68,7 @@ impl ModuleList {
                 .update(cx, |this, cx| {
                     this.workspace.update(cx, |workspace, cx| {
                         workspace.project().update(cx, |this, cx| {
-                            this.find_or_create_worktree(&path, false, cx)
+                            this.find_or_create_worktree(todo!("TODO kb"), &path, false, cx)
                         })
                     })
                 })??

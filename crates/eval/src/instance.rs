@@ -214,7 +214,7 @@ impl ExampleInstance {
         );
 
         let worktree = project.update(cx, |project, cx| {
-            project.create_worktree(self.worktree_path(), true, cx)
+            project.create_worktree(None, self.worktree_path(), true, cx)
         });
 
         let tools = cx.new(|_| ToolWorkingSet::default());

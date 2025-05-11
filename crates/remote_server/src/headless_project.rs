@@ -384,6 +384,7 @@ impl HeadlessProject {
         let worktree = this
             .update(&mut cx.clone(), |this, _| {
                 Worktree::local(
+                    message.payload.parent.map(WorktreeId::from_proto),
                     Arc::from(canonicalized.as_path()),
                     message.payload.visible,
                     this.fs.clone(),
@@ -507,7 +508,7 @@ impl HeadlessProject {
         let (worktree, path) = this
             .update(&mut cx, |this, cx| {
                 this.worktree_store.update(cx, |worktree_store, cx| {
-                    worktree_store.find_or_create_worktree(settings_path, false, cx)
+                    worktree_store.find_or_create_worktree(None, settings_path, false, cx)
                 })
             })?
             .await?;

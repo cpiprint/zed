@@ -77,6 +77,7 @@ impl Database {
                 worktree::Entity::insert_many(worktrees.iter().map(|worktree| {
                     worktree::ActiveModel {
                         id: ActiveValue::set(worktree.id as i64),
+                        parent: ActiveValue::set(worktree.parent.map(|id| id as i64)),
                         project_id: ActiveValue::set(project.id),
                         abs_path: ActiveValue::set(worktree.abs_path.clone()),
                         root_name: ActiveValue::set(worktree.root_name.clone()),
@@ -187,6 +188,7 @@ impl Database {
         if !worktrees.is_empty() {
             worktree::Entity::insert_many(worktrees.iter().map(|worktree| worktree::ActiveModel {
                 id: ActiveValue::set(worktree.id as i64),
+                parent: ActiveValue::set(worktree.parent.map(|id| id as i64)),
                 project_id: ActiveValue::set(project_id),
                 abs_path: ActiveValue::set(worktree.abs_path.clone()),
                 root_name: ActiveValue::set(worktree.root_name.clone()),
@@ -842,6 +844,7 @@ impl Database {
                     db_worktree.id as u64,
                     Worktree {
                         id: db_worktree.id as u64,
+                        parent: db_worktree.parent.map(|id| id as u64),
                         abs_path: db_worktree.abs_path,
                         root_name: db_worktree.root_name,
                         visible: db_worktree.visible,

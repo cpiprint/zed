@@ -1351,8 +1351,14 @@ impl Project {
 
             let mut worktrees = Vec::new();
             for worktree in response.payload.worktrees {
-                let worktree =
-                    Worktree::remote(remote_id, replica_id, worktree, client.clone().into(), cx);
+                let worktree = Worktree::remote(
+                    worktree.parent.map(WorktreeId::from_proto),
+                    remote_id,
+                    replica_id,
+                    worktree,
+                    client.clone().into(),
+                    cx,
+                );
                 worktrees.push(worktree);
             }
 
@@ -1534,7 +1540,7 @@ impl Project {
         for path in root_paths {
             let (tree, _) = project
                 .update(cx, |project, cx| {
-                    project.find_or_create_worktree(path, true, cx)
+                    project.find_or_create_worktree(None, path, true, cx)
                 })
                 .unwrap()
                 .await
@@ -1573,7 +1579,7 @@ impl Project {
         for path in root_paths {
             let (tree, _) = project
                 .update(cx, |project, cx| {
-                    project.find_or_create_worktree(path, true, cx)
+                    project.find_or_create_worktree(None, path, true, cx)
                 })
                 .await
                 .unwrap();
@@ -3375,6 +3381,7 @@ impl Project {
 
     pub fn open_local_buffer_via_lsp(
         &mut self,
+        parent: Option<WorktreeId>,
         abs_path: lsp::Url,
         language_server_id: LanguageServerId,
         language_server_name: LanguageServerName,
@@ -3382,6 +3389,7 @@ impl Project {
     ) -> Task<Result<Entity<Buffer>>> {
         self.lsp_store.update(cx, |lsp_store, cx| {
             lsp_store.open_local_buffer_via_lsp(
+                parent,
                 abs_path,
                 language_server_id,
                 language_server_name,
@@ -3859,12 +3867,13 @@ impl Project {
 
     pub fn find_or_create_worktree(
         &mut self,
+        parent: Option<WorktreeId>,
         abs_path: impl AsRef<Path>,
         visible: bool,
         cx: &mut Context<Self>,
     ) -> Task<Result<(Entity<Worktree>, PathBuf)>> {
         self.worktree_store.update(cx, |worktree_store, cx| {
-            worktree_store.find_or_create_worktree(abs_path, visible, cx)
+            worktree_store.find_or_create_worktree(parent, abs_path, visible, cx)
         })
     }
 
@@ -4063,12 +4072,13 @@ impl Project {
 
     pub fn create_worktree(
         &mut self,
+        parent: Option<WorktreeId>,
         abs_path: impl AsRef<Path>,
         visible: bool,
         cx: &mut Context<Self>,
     ) -> Task<Result<Entity<Worktree>>> {
         self.worktree_store.update(cx, |worktree_store, cx| {
-            worktree_store.create_worktree(abs_path, visible, cx)
+            worktree_store.create_worktree(parent, abs_path, visible, cx)
         })
     }
 

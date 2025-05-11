@@ -39,6 +39,7 @@ async fn test_traversal(cx: &mut TestAppContext) {
     .await;
 
     let tree = Worktree::local(
+        None,
         Path::new("/root"),
         true,
         fs,
@@ -103,6 +104,7 @@ async fn test_circular_symlinks(cx: &mut TestAppContext) {
         .unwrap();
 
     let tree = Worktree::local(
+        None,
         Path::new("/root"),
         true,
         fs.clone(),
@@ -202,6 +204,7 @@ async fn test_symlinks_pointing_outside(cx: &mut TestAppContext) {
         .unwrap();
 
     let tree = Worktree::local(
+        None,
         Path::new("/root/dir1"),
         true,
         fs.clone(),
@@ -352,6 +355,7 @@ async fn test_renaming_case_only(cx: &mut TestAppContext) {
     }));
 
     let tree = Worktree::local(
+        None,
         temp_root.path(),
         true,
         fs.clone(),
@@ -428,6 +432,7 @@ async fn test_open_gitignored_files(cx: &mut TestAppContext) {
     .await;
 
     let tree = Worktree::local(
+        None,
         Path::new("/root"),
         true,
         fs.clone(),
@@ -592,6 +597,7 @@ async fn test_dirs_no_longer_ignored(cx: &mut TestAppContext) {
     .await;
 
     let tree = Worktree::local(
+        None,
         Path::new("/root"),
         true,
         fs.clone(),
@@ -692,6 +698,7 @@ async fn test_write_file(cx: &mut TestAppContext) {
     }));
 
     let worktree = Worktree::local(
+        None,
         dir.path(),
         true,
         Arc::new(RealFs::new(None, cx.executor())),
@@ -781,6 +788,7 @@ async fn test_file_scan_inclusions(cx: &mut TestAppContext) {
     });
 
     let tree = Worktree::local(
+        None,
         dir.path(),
         true,
         Arc::new(RealFs::new(None, cx.executor())),
@@ -844,6 +852,7 @@ async fn test_file_scan_exclusions_overrules_inclusions(cx: &mut TestAppContext)
     });
 
     let tree = Worktree::local(
+        None,
         dir.path(),
         true,
         Arc::new(RealFs::new(None, cx.executor())),
@@ -901,6 +910,7 @@ async fn test_file_scan_inclusions_reindexes_on_setting_change(cx: &mut TestAppC
         });
     });
     let tree = Worktree::local(
+        None,
         dir.path(),
         true,
         Arc::new(RealFs::new(None, cx.executor())),
@@ -986,6 +996,7 @@ async fn test_file_scan_exclusions(cx: &mut TestAppContext) {
     });
 
     let tree = Worktree::local(
+        None,
         dir.path(),
         true,
         Arc::new(RealFs::new(None, cx.executor())),
@@ -1091,6 +1102,7 @@ async fn test_fs_events_in_exclusions(cx: &mut TestAppContext) {
     });
 
     let tree = Worktree::local(
+        None,
         dir.path(),
         true,
         Arc::new(RealFs::new(None, cx.executor())),
@@ -1202,6 +1214,7 @@ async fn test_fs_events_in_dot_git_worktree(cx: &mut TestAppContext) {
     let dot_git_worktree_dir = dir.path().join(".git");
 
     let tree = Worktree::local(
+        None,
         dot_git_worktree_dir.clone(),
         true,
         Arc::new(RealFs::new(None, cx.executor())),
@@ -1240,6 +1253,7 @@ async fn test_create_directory_during_initial_scan(cx: &mut TestAppContext) {
     .await;
 
     let tree = Worktree::local(
+        None,
         "/root".as_ref(),
         true,
         fs,
@@ -1306,6 +1320,7 @@ async fn test_create_dir_all_on_create_entry(cx: &mut TestAppContext) {
         .await;
 
     let tree_fake = Worktree::local(
+        None,
         "/root".as_ref(),
         true,
         fs_fake,
@@ -1340,6 +1355,7 @@ async fn test_create_dir_all_on_create_entry(cx: &mut TestAppContext) {
     }));
 
     let tree_real = Worktree::local(
+        None,
         temp_root.path(),
         true,
         fs_real,
@@ -1430,6 +1446,7 @@ async fn test_random_worktree_operations_during_initial_scan(
     log::info!("generated initial tree");
 
     let worktree = Worktree::local(
+        None,
         root_dir,
         true,
         fs.clone(),
@@ -1521,6 +1538,7 @@ async fn test_random_worktree_changes(cx: &mut TestAppContext, mut rng: StdRng) 
     log::info!("generated initial tree");
 
     let worktree = Worktree::local(
+        None,
         root_dir,
         true,
         fs.clone(),
@@ -1593,6 +1611,7 @@ async fn test_random_worktree_changes(cx: &mut TestAppContext, mut rng: StdRng) 
 
     {
         let new_worktree = Worktree::local(
+            None,
             root_dir,
             true,
             fs.clone(),
@@ -1931,6 +1950,7 @@ async fn test_private_single_file_worktree(cx: &mut TestAppContext) {
     fs.insert_tree("/", json!({".env": "PRIVATE=secret\n"}))
         .await;
     let tree = Worktree::local(
+        None,
         Path::new("/.env"),
         true,
         fs.clone(),
@@ -2000,6 +2020,7 @@ async fn test_repository_above_root(executor: BackgroundExecutor, cx: &mut TestA
     )
     .await;
     let worktree = Worktree::local(
+        None,
         path!("/root/subproject").as_ref(),
         true,
         fs.clone(),

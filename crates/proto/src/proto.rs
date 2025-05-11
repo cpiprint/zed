@@ -712,6 +712,7 @@ pub fn split_worktree_update(mut message: UpdateWorktree) -> impl Iterator<Item 
         };
 
         Some(UpdateWorktree {
+            parent: message.parent,
             project_id: message.project_id,
             worktree_id: message.worktree_id,
             root_name: message.root_name.clone(),

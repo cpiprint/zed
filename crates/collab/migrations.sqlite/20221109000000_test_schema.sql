@@ -71,6 +71,7 @@ CREATE INDEX "index_projects_on_host_connection_id_and_host_connection_server_id
 CREATE TABLE "worktrees" (
     "project_id" INTEGER NOT NULL REFERENCES projects (id) ON DELETE CASCADE,
     "id" INTEGER NOT NULL,
+    "parent" INTEGER,
     "root_name" VARCHAR NOT NULL,
     "abs_path" VARCHAR NOT NULL,
     "visible" BOOL NOT NULL,

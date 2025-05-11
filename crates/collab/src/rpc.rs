@@ -1448,6 +1448,7 @@ fn notify_rejoined_projects(
         for worktree in mem::take(&mut project.worktrees) {
             // Stream this worktree's entries.
             let message = proto::UpdateWorktree {
+                parent: worktree.parent,
                 project_id: project.id.to_proto(),
                 worktree_id: worktree.id,
                 abs_path: worktree.abs_path.clone(),
@@ -1844,6 +1845,7 @@ fn join_project_internal(
         .iter()
         .map(|(id, worktree)| proto::WorktreeMetadata {
             id: *id,
+            parent: worktree.parent,
             root_name: worktree.root_name.clone(),
             visible: worktree.visible,
             abs_path: worktree.abs_path.clone(),
@@ -1883,6 +1885,7 @@ fn join_project_internal(
     for (worktree_id, worktree) in mem::take(&mut project.worktrees) {
         // Stream this worktree's entries.
         let message = proto::UpdateWorktree {
+            parent: worktree.parent,
             project_id: project_id.to_proto(),
             worktree_id,
             abs_path: worktree.abs_path.clone(),

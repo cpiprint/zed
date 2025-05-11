@@ -705,7 +705,9 @@ impl TestClient {
     ) -> (Entity<Project>, WorktreeId) {
         let project = self.build_empty_local_project(cx);
         let (worktree, _) = project
-            .update(cx, |p, cx| p.find_or_create_worktree(root_path, true, cx))
+            .update(cx, |p, cx| {
+                p.find_or_create_worktree(None, root_path, true, cx)
+            })
             .await
             .unwrap();
         worktree
@@ -733,7 +735,9 @@ impl TestClient {
             )
         });
         let (worktree, _) = project
-            .update(cx, |p, cx| p.find_or_create_worktree(root_path, true, cx))
+            .update(cx, |p, cx| {
+                p.find_or_create_worktree(None, root_path, true, cx)
+            })
             .await
             .unwrap();
         (project, worktree.read_with(cx, |tree, _| tree.id()))

@@ -12,6 +12,7 @@ use rpc::{
     AnyProtoClient, TypedEnvelope,
     proto::{self},
 };
+use settings::WorktreeId;
 use std::{hash::Hash, ops::Range, path::Path, sync::Arc, u32};
 use text::{Point, PointUtf16};
 
@@ -612,6 +613,7 @@ impl BreakpointStore {
 
     pub fn with_serialized_breakpoints(
         &self,
+        parent: Option<WorktreeId>,
         breakpoints: BTreeMap<Arc<Path>, Vec<SourceBreakpoint>>,
         cx: &mut Context<BreakpointStore>,
     ) -> Task<Result<()>> {
@@ -626,7 +628,7 @@ impl BreakpointStore {
                     let (worktree, relative_path) = mode
                         .worktree_store
                         .update(cx, |this, cx| {
-                            this.find_or_create_worktree(&path, false, cx)
+                            this.find_or_create_worktree(parent, &path, false, cx)
                         })?
                         .await?;
                     let buffer = mode

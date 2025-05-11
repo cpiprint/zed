@@ -62,7 +62,7 @@ async fn test_basic_remote_editing(cx: &mut TestAppContext, server_cx: &mut Test
     let (project, _headless) = init_test(&fs, cx, server_cx).await;
     let (worktree, _) = project
         .update(cx, |project, cx| {
-            project.find_or_create_worktree(path!("/code/project1"), true, cx)
+            project.find_or_create_worktree(None, path!("/code/project1"), true, cx)
         })
         .await
         .unwrap();
@@ -186,7 +186,7 @@ async fn test_remote_project_search(cx: &mut TestAppContext, server_cx: &mut Tes
 
     project
         .update(cx, |project, cx| {
-            project.find_or_create_worktree(path!("/code/project1"), true, cx)
+            project.find_or_create_worktree(None, path!("/code/project1"), true, cx)
         })
         .await
         .unwrap();
@@ -324,7 +324,7 @@ async fn test_remote_settings(cx: &mut TestAppContext, server_cx: &mut TestAppCo
 
     let worktree_id = project
         .update(cx, |project, cx| {
-            project.find_or_create_worktree("/code/project1", true, cx)
+            project.find_or_create_worktree(None, "/code/project1", true, cx)
         })
         .await
         .unwrap()
@@ -439,7 +439,7 @@ async fn test_remote_lsp(cx: &mut TestAppContext, server_cx: &mut TestAppContext
 
     let worktree_id = project
         .update(cx, |project, cx| {
-            project.find_or_create_worktree(path!("/code/project1"), true, cx)
+            project.find_or_create_worktree(None, path!("/code/project1"), true, cx)
         })
         .await
         .unwrap()
@@ -620,7 +620,7 @@ async fn test_remote_cancel_language_server_work(
 
     let worktree_id = project
         .update(cx, |project, cx| {
-            project.find_or_create_worktree(path!("/code/project1"), true, cx)
+            project.find_or_create_worktree(None, path!("/code/project1"), true, cx)
         })
         .await
         .unwrap()
@@ -736,7 +736,7 @@ async fn test_remote_reload(cx: &mut TestAppContext, server_cx: &mut TestAppCont
     let (project, _headless) = init_test(&fs, cx, server_cx).await;
     let (worktree, _) = project
         .update(cx, |project, cx| {
-            project.find_or_create_worktree(path!("/code/project1"), true, cx)
+            project.find_or_create_worktree(None, path!("/code/project1"), true, cx)
         })
         .await
         .unwrap();
@@ -823,14 +823,14 @@ async fn test_remote_resolve_path_in_buffer(
 
     let _ = project
         .update(cx, |project, cx| {
-            project.find_or_create_worktree(path!("/code/project1"), true, cx)
+            project.find_or_create_worktree(None, path!("/code/project1"), true, cx)
         })
         .await
         .unwrap();
 
     let (worktree2, _) = project
         .update(cx, |project, cx| {
-            project.find_or_create_worktree(path!("/code/project2"), true, cx)
+            project.find_or_create_worktree(None, path!("/code/project2"), true, cx)
         })
         .await
         .unwrap();
@@ -954,7 +954,7 @@ async fn test_canceling_buffer_opening(cx: &mut TestAppContext, server_cx: &mut 
     let (project, _headless) = init_test(&fs, cx, server_cx).await;
     let (worktree, _) = project
         .update(cx, |project, cx| {
-            project.find_or_create_worktree("/code/project1", true, cx)
+            project.find_or_create_worktree(None, "/code/project1", true, cx)
         })
         .await
         .unwrap();
@@ -1003,14 +1003,14 @@ async fn test_adding_then_removing_then_adding_worktrees(
     let (project, _headless) = init_test(&fs, cx, server_cx).await;
     let (_worktree, _) = project
         .update(cx, |project, cx| {
-            project.find_or_create_worktree(path!("/code/project1"), true, cx)
+            project.find_or_create_worktree(None, path!("/code/project1"), true, cx)
         })
         .await
         .unwrap();
 
     let (worktree_2, _) = project
         .update(cx, |project, cx| {
-            project.find_or_create_worktree(path!("/code/project2"), true, cx)
+            project.find_or_create_worktree(None, path!("/code/project2"), true, cx)
         })
         .await
         .unwrap();
@@ -1020,7 +1020,7 @@ async fn test_adding_then_removing_then_adding_worktrees(
 
     let (worktree_2, _) = project
         .update(cx, |project, cx| {
-            project.find_or_create_worktree(path!("/code/project2"), true, cx)
+            project.find_or_create_worktree(None, path!("/code/project2"), true, cx)
         })
         .await
         .unwrap();
@@ -1091,7 +1091,7 @@ async fn test_reconnect(cx: &mut TestAppContext, server_cx: &mut TestAppContext)
 
     let (worktree, _) = project
         .update(cx, |project, cx| {
-            project.find_or_create_worktree(path!("/code/project1"), true, cx)
+            project.find_or_create_worktree(None, path!("/code/project1"), true, cx)
         })
         .await
         .unwrap();
@@ -1146,7 +1146,7 @@ async fn test_remote_root_rename(cx: &mut TestAppContext, server_cx: &mut TestAp
 
     let (worktree, _) = project
         .update(cx, |project, cx| {
-            project.find_or_create_worktree("/code/project1", true, cx)
+            project.find_or_create_worktree(None, "/code/project1", true, cx)
         })
         .await
         .unwrap();
@@ -1184,7 +1184,7 @@ async fn test_remote_rename_entry(cx: &mut TestAppContext, server_cx: &mut TestA
     let (project, _) = init_test(&fs, cx, server_cx).await;
     let (worktree, _) = project
         .update(cx, |project, cx| {
-            project.find_or_create_worktree("/code/project1", true, cx)
+            project.find_or_create_worktree(None, "/code/project1", true, cx)
         })
         .await
         .unwrap();
@@ -1232,7 +1232,7 @@ async fn test_copy_file_into_remote_project(
     let (project, _) = init_test(&remote_fs, cx, server_cx).await;
     let (worktree, _) = project
         .update(cx, |project, cx| {
-            project.find_or_create_worktree(path!("/code/project1"), true, cx)
+            project.find_or_create_worktree(None, path!("/code/project1"), true, cx)
         })
         .await
         .unwrap();
@@ -1361,7 +1361,7 @@ async fn test_remote_git_diffs(cx: &mut TestAppContext, server_cx: &mut TestAppC
     let (project, _headless) = init_test(&fs, cx, server_cx).await;
     let (worktree, _) = project
         .update(cx, |project, cx| {
-            project.find_or_create_worktree("/code/project1", true, cx)
+            project.find_or_create_worktree(None, "/code/project1", true, cx)
         })
         .await
         .unwrap();
@@ -1456,7 +1456,7 @@ async fn test_remote_git_branches(cx: &mut TestAppContext, server_cx: &mut TestA
 
     let (_worktree, _) = project
         .update(cx, |project, cx| {
-            project.find_or_create_worktree(path!("/code/project1"), true, cx)
+            project.find_or_create_worktree(None, path!("/code/project1"), true, cx)
         })
         .await
         .unwrap();
@@ -1566,7 +1566,7 @@ async fn test_remote_agent_fs_tool_calls(cx: &mut TestAppContext, server_cx: &mu
     let (project, _headless_project) = init_test(&fs, cx, server_cx).await;
     project
         .update(cx, |project, cx| {
-            project.find_or_create_worktree(path!("/project"), true, cx)
+            project.find_or_create_worktree(None, path!("/project"), true, cx)
         })
         .await
         .unwrap();

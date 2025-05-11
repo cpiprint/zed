@@ -2835,6 +2835,7 @@ impl LocalLspStore {
                     let buffer_to_edit = this
                         .update(cx, |this, cx| {
                             this.open_local_buffer_via_lsp(
+                                todo!("TODO kb parent"),
                                 op.text_document.uri.clone(),
                                 language_server.server_id(),
                                 lsp_adapter.name.clone(),
@@ -6592,6 +6593,7 @@ impl LspStore {
             };
 
             self.open_local_buffer_via_lsp(
+                Some(symbol.source_worktree_id),
                 symbol_uri,
                 language_server_id,
                 symbol.language_server_name.clone(),
@@ -6604,6 +6606,7 @@ impl LspStore {
 
     pub fn open_local_buffer_via_lsp(
         &mut self,
+        parent: Option<WorktreeId>,
         mut abs_path: lsp::Url,
         language_server_id: LanguageServerId,
         language_server_name: LanguageServerName,
@@ -6650,7 +6653,7 @@ impl LspStore {
                 let worktree = lsp_store
                     .update(cx, |lsp_store, cx| {
                         lsp_store.worktree_store.update(cx, |worktree_store, cx| {
-                            worktree_store.create_worktree(&worktree_root_target, false, cx)
+                            worktree_store.create_worktree(parent, &worktree_root_target, false, cx)
                         })
                     })?
                     .await?;

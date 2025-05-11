@@ -672,6 +672,7 @@ impl RejoinedProject {
                 .iter()
                 .map(|worktree| proto::WorktreeMetadata {
                     id: worktree.id,
+                    parent: worktree.parent,
                     root_name: worktree.root_name.clone(),
                     visible: worktree.visible,
                     abs_path: worktree.abs_path.clone(),
@@ -690,6 +691,7 @@ impl RejoinedProject {
 #[derive(Debug)]
 pub struct RejoinedWorktree {
     pub id: u64,
+    pub parent: Option<u64>,
     pub abs_path: String,
     pub root_name: String,
     pub visible: bool,
@@ -759,6 +761,7 @@ pub struct LeftProject {
 
 pub struct Worktree {
     pub id: u64,
+    pub parent: Option<u64>,
     pub abs_path: String,
     pub root_name: String,
     pub visible: bool,

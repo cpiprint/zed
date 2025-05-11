@@ -1,0 +1,2 @@
+ALTER TABLE worktrees
+ADD COLUMN parent INTEGER,

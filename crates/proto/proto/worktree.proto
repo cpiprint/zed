@@ -33,6 +33,7 @@ message AddWorktree {
     string path = 1;
     uint64 project_id = 2;
     bool visible = 3;
+    optional uint64 parent = 4;
 }
 
 message AddWorktreeResponse {
@@ -60,6 +61,7 @@ message WorktreeMetadata {
     string root_name = 2;
     bool visible = 3;
     string abs_path = 4;
+    optional uint64 parent = 5;
 }
 
 message ProjectPath {

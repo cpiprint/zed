@@ -149,6 +149,7 @@ pub struct RemoteWorktree {
 #[derive(Clone)]
 pub struct Snapshot {
     id: WorktreeId,
+    parent: Option<WorktreeId>,
     abs_path: SanitizedPath,
     root_name: String,
     root_char_bag: CharBag,
@@ -483,6 +484,7 @@ impl EventEmitter<Event> for Worktree {}
 
 impl Worktree {
     pub async fn local(
+        parent: Option<WorktreeId>,
         path: impl Into<Arc<Path>>,
         visible: bool,
         fs: Arc<dyn Fs>,
@@ -506,10 +508,11 @@ impl Worktree {
 
         cx.new(move |cx: &mut Context<Worktree>| {
             let mut snapshot = LocalSnapshot {
-                ignores_by_parent_abs_path: Default::default(),
-                git_repositories: Default::default(),
+                ignores_by_parent_abs_path: HashMap::default(),
+                git_repositories: TreeMap::default(),
                 snapshot: Snapshot::new(
                     cx.entity_id().as_u64(),
+                    parent,
                     abs_path
                         .file_name()
                         .map_or(String::new(), |f| f.to_string_lossy().to_string()),
@@ -574,6 +577,7 @@ impl Worktree {
     }
 
     pub fn remote(
+        parent: Option<WorktreeId>,
         project_id: u64,
         replica_id: ReplicaId,
         worktree: proto::WorktreeMetadata,
@@ -583,6 +587,7 @@ impl Worktree {
         cx.new(|cx: &mut Context<Self>| {
             let snapshot = Snapshot::new(
                 worktree.id,
+                parent,
                 worktree.root_name,
                 Arc::<Path>::from_proto(worktree.abs_path),
             );
@@ -736,6 +741,7 @@ impl Worktree {
 
     pub fn metadata_proto(&self) -> proto::WorktreeMetadata {
         proto::WorktreeMetadata {
+            parent: self.parent.map(|id| id.to_proto()),
             id: self.id().to_proto(),
             root_name: self.root_name().to_string(),
             visible: self.is_visible(),
@@ -2344,15 +2350,21 @@ impl RemoteWorktree {
 }
 
 impl Snapshot {
-    pub fn new(id: u64, root_name: String, abs_path: Arc<Path>) -> Self {
+    pub fn new(
+        id: u64,
+        parent: Option<WorktreeId>,
+        root_name: String,
+        abs_path: Arc<Path>,
+    ) -> Self {
         Snapshot {
             id: WorktreeId::from_usize(id as usize),
-            abs_path: abs_path.into(),
+            parent,
+            abs_path: SanitizedPath::from(abs_path),
             root_char_bag: root_name.chars().map(|c| c.to_ascii_lowercase()).collect(),
             root_name,
-            always_included_entries: Default::default(),
-            entries_by_path: Default::default(),
-            entries_by_id: Default::default(),
+            always_included_entries: Vec::new(),
+            entries_by_path: SumTree::default(),
+            entries_by_id: SumTree::default(),
             scan_id: 1,
             completed_scan_id: 0,
         }
@@ -2360,6 +2372,10 @@ impl Snapshot {
 
     pub fn id(&self) -> WorktreeId {
         self.id
+    }
+
+    pub fn parent(&self) -> Option<WorktreeId> {
+        self.parent
     }
 
     // TODO:
@@ -2387,6 +2403,7 @@ impl Snapshot {
         updated_entries.sort_unstable_by_key(|e| e.id);
 
         proto::UpdateWorktree {
+            parent: self.parent().map(|id| id.to_proto()),
             project_id,
             worktree_id,
             abs_path: self.abs_path().to_proto(),
@@ -2723,6 +2740,7 @@ impl LocalSnapshot {
         removed_entries.retain(|id| updated_entries.binary_search_by_key(id, |e| e.id).is_err());
 
         proto::UpdateWorktree {
+            parent: self.parent.map(|id| id.to_proto()),
             project_id,
             worktree_id,
             abs_path: self.abs_path().to_proto(),

@@ -216,6 +216,7 @@ message UpdateWorktree {
     uint64 scan_id = 8;
     bool is_last_update = 9;
     string abs_path = 10;
+    optional uint64 parent = 11;
 }
 
 // deprecated

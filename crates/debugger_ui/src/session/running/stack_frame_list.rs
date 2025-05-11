@@ -265,7 +265,7 @@ impl StackFrameList {
                 .update(cx, |this, cx| {
                     this.workspace.update(cx, |workspace, cx| {
                         workspace.project().update(cx, |this, cx| {
-                            this.find_or_create_worktree(&abs_path, false, cx)
+                            this.find_or_create_worktree(todo!("TODO kb"), &abs_path, false, cx)
                         })
                     })
                 })??

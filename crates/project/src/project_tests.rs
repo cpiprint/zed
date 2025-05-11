@@ -1033,6 +1033,7 @@ async fn test_reporting_fs_changes_to_language_servers(cx: &mut gpui::TestAppCon
     let _out_of_worktree_buffer = project
         .update(cx, |project, cx| {
             project.open_local_buffer_via_lsp(
+                None,
                 lsp::Url::from_file_path(path!("/the-registry/dep1/src/dep1.rs")).unwrap(),
                 server_id,
                 server_name.clone(),
@@ -1344,7 +1345,7 @@ async fn test_omitted_diagnostics(cx: &mut gpui::TestAppContext) {
     let lsp_store = project.read_with(cx, |project, _| project.lsp_store());
     let (worktree, _) = project
         .update(cx, |project, cx| {
-            project.find_or_create_worktree(path!("/root/dir"), true, cx)
+            project.find_or_create_worktree(None, path!("/root/dir"), true, cx)
         })
         .await
         .unwrap();
@@ -1352,7 +1353,7 @@ async fn test_omitted_diagnostics(cx: &mut gpui::TestAppContext) {
 
     let (worktree, _) = project
         .update(cx, |project, cx| {
-            project.find_or_create_worktree(path!("/root/other.rs"), false, cx)
+            project.find_or_create_worktree(None, path!("/root/other.rs"), false, cx)
         })
         .await
         .unwrap();
@@ -1387,7 +1388,7 @@ async fn test_omitted_diagnostics(cx: &mut gpui::TestAppContext) {
                         range: lsp::Range::new(lsp::Position::new(0, 8), lsp::Position::new(0, 9)),
                         severity: Some(lsp::DiagnosticSeverity::ERROR),
                         message: "unknown variable 'c'".to_string(),
-                        ..Default::default()
+                        ..lsp::Diagnostic::default()
                     }],
                 },
                 &[],
@@ -3753,8 +3754,8 @@ async fn test_rescan_and_remote_updates(cx: &mut gpui::TestAppContext) {
         });
     });
 
-    let remote =
-        cx.update(|cx| Worktree::remote(0, 1, metadata, project.read(cx).client().into(), cx));
+    let remote = cx
+        .update(|cx| Worktree::remote(None, 0, 1, metadata, project.read(cx).client().into(), cx));
 
     cx.executor().run_until_parked();
 
@@ -8133,7 +8134,7 @@ async fn test_repos_in_invisible_worktrees(
     let (invisible_worktree, _) = project
         .update(cx, |project, cx| {
             project.worktree_store.update(cx, |worktree_store, cx| {
-                worktree_store.find_or_create_worktree(path!("/root/dir1/b.txt"), false, cx)
+                worktree_store.find_or_create_worktree(None, path!("/root/dir1/b.txt"), false, cx)
             })
         })
         .await

@@ -1075,10 +1075,14 @@ pub async fn location_links_from_lsp(
     let (lsp_adapter, language_server) =
         language_server_for_buffer(&lsp_store, &buffer, server_id, &mut cx)?;
     let mut definitions = Vec::new();
+    let parent = cx.update(|cx| {
+        crate::File::from_dyn(buffer.read(cx).file()).map(|file| file.worktree.read(cx).id())
+    })?;
     for (origin_range, target_uri, target_range) in unresolved_links {
         let target_buffer_handle = lsp_store
             .update(&mut cx, |this, cx| {
                 this.open_local_buffer_via_lsp(
+                    parent,
                     target_uri,
                     language_server.server_id(),
                     lsp_adapter.name.clone(),
@@ -1137,9 +1141,14 @@ pub async fn location_link_from_lsp(
         link.target_selection_range,
     );
 
+    let parent = cx.update(|cx| {
+        crate::File::from_dyn(buffer.read(cx).file()).map(|file| file.worktree.read(cx).id())
+    })?;
+
     let target_buffer_handle = lsp_store
         .update(cx, |lsp_store, cx| {
             lsp_store.open_local_buffer_via_lsp(
+                parent,
                 target_uri,
                 language_server.server_id(),
                 lsp_adapter.name.clone(),
@@ -1284,12 +1293,16 @@ impl LspCommand for GetReferences {
         let mut references = Vec::new();
         let (lsp_adapter, language_server) =
             language_server_for_buffer(&lsp_store, &buffer, server_id, &mut cx)?;
+        let parent = cx.update(|cx| {
+            crate::File::from_dyn(buffer.read(cx).file()).map(|file| file.worktree.read(cx).id())
+        })?;
 
         if let Some(locations) = locations {
             for lsp_location in locations {
                 let target_buffer_handle = lsp_store
                     .update(&mut cx, |lsp_store, cx| {
                         lsp_store.open_local_buffer_via_lsp(
+                            parent,
                             lsp_location.uri,
                             language_server.server_id(),
                             lsp_adapter.name.clone(),
@@ -2423,8 +2436,8 @@ pub(crate) fn parse_completion_text_edit(
     };
 
     Some(ParsedCompletionEdit {
-        insert_range: insert_range,
-        replace_range: replace_range,
+        insert_range,
+        replace_range,
         new_text: new_text.clone(),
     })
 }

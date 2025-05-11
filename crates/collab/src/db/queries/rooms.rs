@@ -616,6 +616,7 @@ impl Database {
         for db_worktree in db_worktrees {
             let mut worktree = RejoinedWorktree {
                 id: db_worktree.id as u64,
+                parent: db_worktree.parent.map(|id| id as u64),
                 abs_path: db_worktree.abs_path,
                 root_name: db_worktree.root_name,
                 visible: db_worktree.visible,

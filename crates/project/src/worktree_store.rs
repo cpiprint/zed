@@ -166,6 +166,7 @@ impl WorktreeStore {
 
     pub fn find_or_create_worktree(
         &mut self,
+        parent: Option<WorktreeId>,
         abs_path: impl AsRef<Path>,
         visible: bool,
         cx: &mut Context<Self>,
@@ -174,7 +175,7 @@ impl WorktreeStore {
         if let Some((tree, relative_path)) = self.find_worktree(abs_path, cx) {
             Task::ready(Ok((tree, relative_path)))
         } else {
-            let worktree = self.create_worktree(abs_path, visible, cx);
+            let worktree = self.create_worktree(parent, abs_path, visible, cx);
             cx.background_spawn(async move { Ok((worktree.await?, PathBuf::new())) })
         }
     }
@@ -206,6 +207,7 @@ impl WorktreeStore {
 
     pub fn create_worktree(
         &mut self,
+        parent: Option<WorktreeId>,
         abs_path: impl Into<SanitizedPath>,
         visible: bool,
         cx: &mut Context<Self>,
@@ -221,6 +223,7 @@ impl WorktreeStore {
                     } else {
                         self.create_ssh_worktree(
                             upstream_client.clone(),
+                            parent,
                             abs_path.clone(),
                             visible,
                             cx,
@@ -228,7 +231,7 @@ impl WorktreeStore {
                     }
                 }
                 WorktreeStoreState::Local { fs } => {
-                    self.create_local_worktree(fs.clone(), abs_path.clone(), visible, cx)
+                    self.create_local_worktree(parent, fs.clone(), abs_path.clone(), visible, cx)
                 }
             };
 
@@ -250,6 +253,7 @@ impl WorktreeStore {
     fn create_ssh_worktree(
         &mut self,
         client: AnyProtoClient,
+        parent: Option<WorktreeId>,
         abs_path: impl Into<SanitizedPath>,
         visible: bool,
         cx: &mut Context<Self>,
@@ -271,6 +275,7 @@ impl WorktreeStore {
             let path = Path::new(abs_path.as_str());
             let response = client
                 .request(proto::AddWorktree {
+                    parent: parent.map(|id| id.to_proto()),
                     project_id: SSH_PROJECT_ID,
                     path: path.to_proto(),
                     visible,
@@ -291,6 +296,7 @@ impl WorktreeStore {
 
             let worktree = cx.update(|cx| {
                 Worktree::remote(
+                    parent,
                     SSH_PROJECT_ID,
                     0,
                     proto::WorktreeMetadata {
@@ -298,6 +304,7 @@ impl WorktreeStore {
                         root_name,
                         visible,
                         abs_path: response.canonicalized_path,
+                        parent: parent.map(|id| id.to_proto()),
                     },
                     client,
                     cx,
@@ -313,6 +320,7 @@ impl WorktreeStore {
 
     fn create_local_worktree(
         &mut self,
+        parent: Option<WorktreeId>,
         fs: Arc<dyn Fs>,
         abs_path: impl Into<SanitizedPath>,
         visible: bool,
@@ -322,7 +330,8 @@ impl WorktreeStore {
         let path: SanitizedPath = abs_path.into();
 
         cx.spawn(async move |this, cx| {
-            let worktree = Worktree::local(path.clone(), visible, fs, next_entry_id, cx).await;
+            let worktree =
+                Worktree::local(parent, path.clone(), visible, fs, next_entry_id, cx).await;
 
             let worktree = worktree?;
 
@@ -469,7 +478,14 @@ impl WorktreeStore {
                 self.worktrees.push(handle);
             } else {
                 self.add(
-                    &Worktree::remote(project_id, replica_id, worktree, client.clone(), cx),
+                    &Worktree::remote(
+                        worktree.parent.map(WorktreeId::from_proto),
+                        project_id,
+                        replica_id,
+                        worktree,
+                        client.clone(),
+                        cx,
+                    ),
                     cx,
                 );
             }
@@ -597,6 +613,7 @@ impl WorktreeStore {
                 let worktree = worktree.read(cx);
                 proto::WorktreeMetadata {
                     id: worktree.id().to_proto(),
+                    parent: worktree.parent().map(|id| id.to_proto()),
                     root_name: worktree.root_name().into(),
                     visible: worktree.is_visible(),
                     abs_path: worktree.abs_path().to_proto(),

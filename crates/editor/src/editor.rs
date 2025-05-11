@@ -14271,6 +14271,7 @@ impl Editor {
                         .map(|(_, status)| LanguageServerName::from(status.name.as_str()));
                     language_server_name.map(|language_server_name| {
                         project.open_local_buffer_via_lsp(
+                            todo!("TODO kb"),
                             lsp_location.uri.clone(),
                             server_id,
                             language_server_name,
