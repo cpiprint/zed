@@ -1021,6 +1021,18 @@ impl LocalLspStore {
             })
     }
 
+    fn worktree_for_language_server(&self, server_id: LanguageServerId) -> Option<WorktreeId> {
+        self.language_server_ids
+            .iter()
+            .find_map(|((worktree_id, _), worktree_servers)| {
+                if worktree_servers.contains(&server_id) {
+                    Some(*worktree_id)
+                } else {
+                    None
+                }
+            })
+    }
+
     fn language_server_ids_for_project_path(
         &self,
         project_path: ProjectPath,
@@ -2733,14 +2745,15 @@ impl LocalLspStore {
     }
 
     pub(crate) async fn deserialize_workspace_edit(
-        this: Entity<LspStore>,
+        lsp_store: Entity<LspStore>,
         edit: lsp::WorkspaceEdit,
         push_to_history: bool,
         lsp_adapter: Arc<CachedLspAdapter>,
         language_server: Arc<LanguageServer>,
         cx: &mut AsyncApp,
     ) -> Result<ProjectTransaction> {
-        let fs = this.read_with(cx, |this, _| this.as_local().unwrap().fs.clone())?;
+        let fs =
+            lsp_store.read_with(cx, |lsp_store, _| lsp_store.as_local().unwrap().fs.clone())?;
 
         let mut operations = Vec::new();
         if let Some(document_changes) = edit.document_changes {
@@ -2832,19 +2845,26 @@ impl LocalLspStore {
                 }
 
                 lsp::DocumentChangeOperation::Edit(op) => {
-                    let buffer_to_edit = this
+                    let server_id = language_server.server_id();
+                    let parent = lsp_store.update(cx, |lsp_store, _| {
+                        lsp_store
+                            .as_local()
+                            .expect("inside impl LocalLspStore")
+                            .worktree_for_language_server(server_id)
+                    })?;
+                    let buffer_to_edit = lsp_store
                         .update(cx, |this, cx| {
                             this.open_local_buffer_via_lsp(
-                                todo!("TODO kb parent"),
+                                parent,
                                 op.text_document.uri.clone(),
-                                language_server.server_id(),
+                                server_id,
                                 lsp_adapter.name.clone(),
                                 cx,
                             )
                         })?
                         .await?;
 
-                    let edits = this
+                    let edits = lsp_store
                         .update(cx, |this, cx| {
                             let path = buffer_to_edit.read(cx).project_path(cx);
                             let active_entry = this.active_entry;
