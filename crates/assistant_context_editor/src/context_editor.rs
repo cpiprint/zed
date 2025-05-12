@@ -1401,10 +1401,13 @@ impl ContextEditor {
         let paths = match action {
             InsertDraggedFiles::ProjectPaths(paths) => Task::ready((paths.clone(), vec![])),
             InsertDraggedFiles::ExternalFiles(paths) => {
+                let parent = workspace.parent_worktree_id(cx);
                 let tasks = paths
                     .clone()
                     .into_iter()
-                    .map(|path| Workspace::project_path_for_path(project.clone(), &path, false, cx))
+                    .map(|path| {
+                        Workspace::project_path_for_path(parent, project.clone(), &path, false, cx)
+                    })
                     .collect::<Vec<_>>();
 
                 cx.background_spawn(async move {

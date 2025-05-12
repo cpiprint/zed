@@ -2732,31 +2732,45 @@ impl AgentPanel {
                     this.handle_drop(project_paths, vec![], window, cx);
                 }),
             )
-            .on_drop(cx.listener(move |this, paths: &ExternalPaths, window, cx| {
-                let tasks = paths
-                    .paths()
-                    .into_iter()
-                    .map(|path| {
-                        Workspace::project_path_for_path(this.project.clone(), &path, false, cx)
-                    })
-                    .collect::<Vec<_>>();
-                cx.spawn_in(window, async move |this, cx| {
-                    let mut paths = vec![];
-                    let mut added_worktrees = vec![];
-                    let opened_paths = futures::future::join_all(tasks).await;
-                    for entry in opened_paths {
-                        if let Some((worktree, project_path)) = entry.log_err() {
-                            added_worktrees.push(worktree);
-                            paths.push(project_path);
+            .on_drop(
+                cx.listener(move |agent_panel, paths: &ExternalPaths, window, cx| {
+                    let Ok(parent) = agent_panel
+                        .workspace
+                        .update(cx, |workspace, cx| workspace.parent_worktree_id(cx))
+                    else {
+                        return;
+                    };
+                    let tasks = paths
+                        .paths()
+                        .into_iter()
+                        .map(|path| {
+                            Workspace::project_path_for_path(
+                                parent,
+                                agent_panel.project.clone(),
+                                &path,
+                                false,
+                                cx,
+                            )
+                        })
+                        .collect::<Vec<_>>();
+                    cx.spawn_in(window, async move |this, cx| {
+                        let mut paths = vec![];
+                        let mut added_worktrees = vec![];
+                        let opened_paths = futures::future::join_all(tasks).await;
+                        for entry in opened_paths {
+                            if let Some((worktree, project_path)) = entry.log_err() {
+                                added_worktrees.push(worktree);
+                                paths.push(project_path);
+                            }
                         }
-                    }
-                    this.update_in(cx, |this, window, cx| {
-                        this.handle_drop(paths, added_worktrees, window, cx);
+                        this.update_in(cx, |this, window, cx| {
+                            this.handle_drop(paths, added_worktrees, window, cx);
+                        })
+                        .ok();
                     })
-                    .ok();
-                })
-                .detach();
-            }))
+                    .detach();
+                }),
+            )
     }
 
     fn handle_drop(

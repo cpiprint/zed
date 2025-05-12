@@ -1351,7 +1351,13 @@ impl Workspace {
             for path in paths_to_open.into_iter() {
                 if let Some((_, project_entry)) = cx
                     .update(|cx| {
-                        Workspace::project_path_for_path(project_handle.clone(), &path, true, cx)
+                        Workspace::project_path_for_path(
+                            todo!("TODO kb"),
+                            project_handle.clone(),
+                            &path,
+                            true,
+                            cx,
+                        )
                     })?
                     .await
                     .log_err()
@@ -2351,9 +2357,10 @@ impl Workspace {
                 };
                 let project_path = match visible {
                     Some(visible) => match this
-                        .update(cx, |this, cx| {
+                        .update(cx, |workspace, cx| {
                             Workspace::project_path_for_path(
-                                this.project.clone(),
+                                workspace.parent_worktree_id(cx),
+                                workspace.project.clone(),
                                 abs_path,
                                 visible,
                                 cx,
@@ -2503,13 +2510,14 @@ impl Workspace {
     }
 
     pub fn project_path_for_path(
+        parent: Option<WorktreeId>,
         project: Entity<Project>,
         abs_path: &Path,
         visible: bool,
         cx: &mut App,
     ) -> Task<Result<(Entity<Worktree>, ProjectPath)>> {
         let entry = project.update(cx, |project, cx| {
-            project.find_or_create_worktree(todo!("TODO kb"), abs_path, visible, cx)
+            project.find_or_create_worktree(parent, abs_path, visible, cx)
         });
         cx.spawn(async move |cx| {
             let (worktree, path) = entry.await?;
@@ -3053,8 +3061,13 @@ impl Workspace {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Task<anyhow::Result<Box<dyn ItemHandle>>> {
-        let project_path_task =
-            Workspace::project_path_for_path(self.project.clone(), &abs_path, visible, cx);
+        let project_path_task = Workspace::project_path_for_path(
+            self.parent_worktree_id(cx),
+            self.project.clone(),
+            &abs_path,
+            visible,
+            cx,
+        );
         cx.spawn_in(window, async move |this, cx| {
             let (_, path) = project_path_task.await?;
             this.update_in(cx, |this, window, cx| this.split_path(path, window, cx))?
@@ -5529,6 +5542,17 @@ impl Workspace {
             cx.propagate();
         }
     }
+
+    pub fn parent_worktree_id(&self, cx: &App) -> Option<WorktreeId> {
+        self.worktrees(cx).find_map(|worktree| {
+            let worktree = worktree.read(cx);
+            if worktree.is_visible() && worktree.root_entry().is_some_and(|entry| entry.is_dir()) {
+                Some(worktree.id())
+            } else {
+                None
+            }
+        })
+    }
 }
 
 fn leader_border_for_pane(
@@ -6920,12 +6944,14 @@ async fn open_ssh_project_inner(
             })?
             .await;
     }
-    let mut project_paths_to_open = vec![];
-    let mut project_path_errors = vec![];
+    let mut project_paths_to_open = Vec::new();
+    let mut project_path_errors = Vec::new();
 
     for path in paths {
         let result = cx
-            .update(|cx| Workspace::project_path_for_path(project.clone(), &path, true, cx))?
+            .update(|cx| {
+                Workspace::project_path_for_path(todo!("TODO kb"), project.clone(), &path, true, cx)
+            })?
             .await;
         match result {
             Ok((_, project_path)) => {
