@@ -1288,6 +1288,7 @@ impl Workspace {
     }
 
     pub fn new_local(
+        parent: Option<WorktreeId>,
         abs_paths: Vec<PathBuf>,
         app_state: Arc<AppState>,
         requesting_window: Option<WindowHandle<Workspace>>,
@@ -1348,11 +1349,12 @@ impl Workspace {
             let mut project_paths: Vec<(PathBuf, Option<ProjectPath>)> =
                 Vec::with_capacity(paths_to_open.len());
 
+            let mut parent = parent;
             for path in paths_to_open.into_iter() {
-                if let Some((_, project_entry)) = cx
+                if let Some((worktree, project_entry)) = cx
                     .update(|cx| {
                         Workspace::project_path_for_path(
-                            todo!("TODO kb"),
+                            parent,
                             project_handle.clone(),
                             &path,
                             true,
@@ -1362,6 +1364,14 @@ impl Workspace {
                     .await
                     .log_err()
                 {
+                    if parent.is_none() {
+                        worktree
+                            .update(cx, |worktree, _| {
+                                parent = Some(worktree.id());
+                            })
+                            .ok();
+                    }
+
                     project_paths.push((path, Some(project_entry)));
                 } else {
                     project_paths.push((path, None));
@@ -1984,7 +1994,14 @@ impl Workspace {
             Task::ready(Ok(callback(self, window, cx)))
         } else {
             let env = self.project.read(cx).cli_environment(cx);
-            let task = Self::new_local(Vec::new(), self.app_state.clone(), None, env, cx);
+            let task = Self::new_local(
+                self.parent_worktree_id(cx),
+                Vec::new(),
+                self.app_state.clone(),
+                None,
+                env,
+                cx,
+            );
             cx.spawn_in(window, async move |_vh, cx| {
                 let (workspace, _) = task.await?;
                 workspace.update(cx, callback)
@@ -6562,7 +6579,7 @@ pub fn join_channel(
             // no open workspaces, make one to show the error in (blergh)
             let (window_handle, _) = cx
                 .update(|cx| {
-                    Workspace::new_local(vec![], app_state.clone(), requesting_window, None, cx)
+                    Workspace::new_local(None, Vec::new(), app_state.clone(), requesting_window, None, cx)
                 })?
                 .await?;
 
@@ -6620,7 +6637,7 @@ pub async fn get_any_active_workspace(
     // find an existing workspace to focus and show call controls
     let active_window = activate_any_workspace_window(&mut cx);
     if active_window.is_none() {
-        cx.update(|cx| Workspace::new_local(vec![], app_state.clone(), None, None, cx))?
+        cx.update(|cx| Workspace::new_local(None, Vec::new(), app_state.clone(), None, None, cx))?
             .await?;
     }
     activate_any_workspace_window(&mut cx).context("could not open zed")
@@ -6778,6 +6795,7 @@ pub fn open_paths(
         } else {
             cx.update(move |cx| {
                 Workspace::new_local(
+                    None,
                     abs_paths,
                     app_state.clone(),
                     open_options.replace_window,
@@ -6796,7 +6814,7 @@ pub fn open_new(
     cx: &mut App,
     init: impl FnOnce(&mut Workspace, &mut Window, &mut Context<Workspace>) + 'static + Send,
 ) -> Task<anyhow::Result<()>> {
-    let task = Workspace::new_local(Vec::new(), app_state, None, open_options.env, cx);
+    let task = Workspace::new_local(None, Vec::new(), app_state, None, open_options.env, cx);
     cx.spawn(async move |cx| {
         let (workspace, opened_paths) = task.await?;
         workspace.update(cx, |workspace, window, cx| {
@@ -6886,7 +6904,10 @@ pub fn open_ssh_project_with_new_connection(
             )
         })?;
 
+        let parent = parent_worktree_id(&project, cx)?;
+
         open_ssh_project_inner(
+            parent,
             project,
             paths,
             serialized_ssh_project,
@@ -6911,8 +6932,10 @@ pub fn open_ssh_project_with_existing_connection(
     cx.spawn(async move |cx| {
         let (serialized_ssh_project, workspace_id, serialized_workspace) =
             serialize_ssh_project(connection_options.clone(), paths.clone(), &cx).await?;
+        let parent = parent_worktree_id(&project, cx)?;
 
         open_ssh_project_inner(
+            parent,
             project,
             paths,
             serialized_ssh_project,
@@ -6926,7 +6949,25 @@ pub fn open_ssh_project_with_existing_connection(
     })
 }
 
+fn parent_worktree_id(
+    project: &Entity<Project>,
+    cx: &mut AsyncApp,
+) -> Result<Option<WorktreeId>, anyhow::Error> {
+    let parent = cx.update(|cx| {
+        project.read(cx).worktrees(cx).find_map(|worktree| {
+            let worktree = worktree.read(cx);
+            if worktree.is_visible() && worktree.root_entry().is_some_and(|entry| entry.is_dir()) {
+                Some(worktree.id())
+            } else {
+                None
+            }
+        })
+    })?;
+    Ok(parent)
+}
+
 async fn open_ssh_project_inner(
+    parent: Option<WorktreeId>,
     project: Entity<Project>,
     paths: Vec<PathBuf>,
     serialized_ssh_project: SerializedSshProject,
@@ -6950,7 +6991,7 @@ async fn open_ssh_project_inner(
     for path in paths {
         let result = cx
             .update(|cx| {
-                Workspace::project_path_for_path(todo!("TODO kb"), project.clone(), &path, true, cx)
+                Workspace::project_path_for_path(parent, project.clone(), &path, true, cx)
             })?
             .await;
         match result {
