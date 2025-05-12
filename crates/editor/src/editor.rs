@@ -122,7 +122,7 @@ use markdown::Markdown;
 use mouse_context_menu::MouseContextMenu;
 use persistence::DB;
 use project::{
-    ProjectPath,
+    ProjectPath, WorktreeId,
     debugger::{
         breakpoint_store::{
             BreakpointEditAction, BreakpointState, BreakpointStore, BreakpointStoreEvent,
@@ -14088,6 +14088,24 @@ impl Editor {
         window: &mut Window,
         cx: &mut Context<Editor>,
     ) -> Task<Result<Navigated>> {
+        let parent = self.project.as_ref().and_then(|project| {
+            project.update(cx, |project, cx| {
+                self.buffer().read(cx).snapshot(cx).excerpts().find_map(
+                    |(_, buffer_snapshot, _)| {
+                        let worktree_id = buffer_snapshot.file()?.worktree_id(cx);
+                        let worktree = project.worktree_for_id(worktree_id, cx)?;
+                        let worktree = worktree.read(cx);
+                        if worktree.is_visible()
+                            && worktree.root_entry().is_some_and(|entry| entry.is_dir())
+                        {
+                            Some(worktree_id)
+                        } else {
+                            None
+                        }
+                    },
+                )
+            })
+        });
         // If there is one definition, just open it directly
         if definitions.len() == 1 {
             let definition = definitions.pop().unwrap();
@@ -14103,7 +14121,7 @@ impl Editor {
                 }
                 HoverLink::InlayHint(lsp_location, server_id) => {
                     let computation =
-                        self.compute_target_location(lsp_location, server_id, window, cx);
+                        self.compute_target_location(parent, lsp_location, server_id, window, cx);
                     cx.background_spawn(async move {
                         let location = computation.await?;
                         Ok(TargetTaskResult::Location(location))
@@ -14211,7 +14229,13 @@ impl Editor {
                             .map(|definition| match definition {
                                 HoverLink::Text(link) => Task::ready(Ok(Some(link.target))),
                                 HoverLink::InlayHint(lsp_location, server_id) => editor
-                                    .compute_target_location(lsp_location, server_id, window, cx),
+                                    .compute_target_location(
+                                        parent,
+                                        lsp_location,
+                                        server_id,
+                                        window,
+                                        cx,
+                                    ),
                                 HoverLink::Url(_) => Task::ready(Ok(None)),
                                 HoverLink::File(_) => Task::ready(Ok(None)),
                             })
@@ -14253,6 +14277,7 @@ impl Editor {
 
     fn compute_target_location(
         &self,
+        parent: Option<WorktreeId>,
         lsp_location: lsp::Location,
         server_id: LanguageServerId,
         window: &mut Window,
@@ -14271,7 +14296,7 @@ impl Editor {
                         .map(|(_, status)| LanguageServerName::from(status.name.as_str()));
                     language_server_name.map(|language_server_name| {
                         project.open_local_buffer_via_lsp(
-                            todo!("TODO kb"),
+                            parent,
                             lsp_location.uri.clone(),
                             server_id,
                             language_server_name,

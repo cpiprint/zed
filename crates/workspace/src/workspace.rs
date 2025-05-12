@@ -1880,6 +1880,7 @@ impl Workspace {
 
     pub fn prompt_for_new_path(
         &mut self,
+        parent: Option<WorktreeId>,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> oneshot::Receiver<Option<ProjectPath>> {
@@ -1931,7 +1932,7 @@ impl Workspace {
             let project_path = abs_path.and_then(|abs_path| {
                 this.update(cx, |this, cx| {
                     this.project.update(cx, |project, cx| {
-                        project.find_or_create_worktree(todo!("TODO kb"), abs_path, true, cx)
+                        project.find_or_create_worktree(parent, abs_path, true, cx)
                     })
                 })
                 .ok()
@@ -5174,11 +5175,8 @@ impl Workspace {
                     project
                         .breakpoint_store()
                         .update(cx, |breakpoint_store, cx| {
-                            breakpoint_store.with_serialized_breakpoints(
-                                todo!("TODO kb"),
-                                serialized_workspace.breakpoints,
-                                cx,
-                            )
+                            breakpoint_store
+                                .with_serialized_breakpoints(serialized_workspace.breakpoints, cx)
                         })
                 })?
                 .await;

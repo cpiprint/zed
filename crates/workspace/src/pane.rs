@@ -1917,8 +1917,14 @@ impl Pane {
             } else if can_save_as && is_singleton {
                 let abs_path = pane.update_in(cx, |pane, window, cx| {
                     pane.activate_item(item_ix, true, true, window, cx);
+                    let parent = pane.item_for_index(item_ix).and_then(|i| {
+                        i.project_paths(cx)
+                            .into_iter()
+                            .map(|p| p.worktree_id)
+                            .next()
+                    });
                     pane.workspace.update(cx, |workspace, cx| {
-                        workspace.prompt_for_new_path(window, cx)
+                        workspace.prompt_for_new_path(parent, window, cx)
                     })
                 })??;
                 if let Some(abs_path) = abs_path.await.ok().flatten() {
