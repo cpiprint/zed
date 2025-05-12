@@ -12,6 +12,7 @@ use rpc::{
     AnyProtoClient, TypedEnvelope,
     proto::{self},
 };
+use settings::WorktreeId;
 use std::{hash::Hash, ops::Range, path::Path, sync::Arc, u32};
 use text::{Point, PointUtf16};
 
@@ -612,12 +613,13 @@ impl BreakpointStore {
 
     pub fn with_serialized_breakpoints(
         &self,
+        parent: Option<WorktreeId>,
         breakpoints: BTreeMap<Arc<Path>, Vec<SourceBreakpoint>>,
         cx: &mut Context<BreakpointStore>,
     ) -> Task<Result<()>> {
         if let BreakpointStoreMode::Local(mode) = &self.mode {
             let mode = mode.clone();
-            cx.spawn(async move |this, cx| {
+            cx.spawn(async move |breakpoint_store, cx| {
                 let mut new_breakpoints = BTreeMap::default();
                 for (path, bps) in breakpoints {
                     if bps.is_empty() {
@@ -625,8 +627,8 @@ impl BreakpointStore {
                     }
                     let (worktree, relative_path) = mode
                         .worktree_store
-                        .update(cx, |this, cx| {
-                            this.find_or_create_worktree(todo!("TODO kb"), &path, false, cx)
+                        .update(cx, |worktree_store, cx| {
+                            worktree_store.find_or_create_worktree(parent, &path, false, cx)
                         })?
                         .await?;
                     let buffer = mode
@@ -646,7 +648,7 @@ impl BreakpointStore {
                     let snapshot = buffer.update(cx, |buffer, _| buffer.snapshot())?;
 
                     let mut breakpoints_for_file =
-                        this.update(cx, |_, cx| BreakpointsInFile::new(buffer, cx))?;
+                        breakpoint_store.update(cx, |_, cx| BreakpointsInFile::new(buffer, cx))?;
 
                     for bp in bps {
                         let max_point = snapshot.max_point_utf16();
@@ -668,7 +670,7 @@ impl BreakpointStore {
                     }
                     new_breakpoints.insert(path, breakpoints_for_file);
                 }
-                this.update(cx, |this, cx| {
+                breakpoint_store.update(cx, |this, cx| {
                     log::info!("Finish deserializing breakpoints & initializing breakpoint store");
                     for (path, count) in new_breakpoints.iter().map(|(path, bp_in_file)| {
                         (path.to_string_lossy(), bp_in_file.breakpoints.len())

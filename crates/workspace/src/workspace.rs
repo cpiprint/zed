@@ -5129,6 +5129,10 @@ impl Workspace {
                 }
             })?;
 
+            let parent = paths_to_open
+                .iter()
+                .find_map(|path| Some(path.as_ref()?.worktree_id));
+
             let opened_items = paths_to_open
                 .into_iter()
                 .map(|path_to_open| {
@@ -5175,8 +5179,11 @@ impl Workspace {
                     project
                         .breakpoint_store()
                         .update(cx, |breakpoint_store, cx| {
-                            breakpoint_store
-                                .with_serialized_breakpoints(serialized_workspace.breakpoints, cx)
+                            breakpoint_store.with_serialized_breakpoints(
+                                parent,
+                                serialized_workspace.breakpoints,
+                                cx,
+                            )
                         })
                 })?
                 .await;

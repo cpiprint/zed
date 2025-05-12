@@ -331,13 +331,14 @@ impl LineBreakpoint {
                 )))
                 .on_click(move |_, window, cx| {
                     let path = path.clone();
-                    let weak = weak.clone();
+                    let breakpoint_list = weak.clone();
                     let row = breakpoint.row;
                     maybe!({
-                        let task = weak
-                            .update(cx, |this, cx| {
-                                this.worktree_store.update(cx, |this, cx| {
-                                    this.find_or_create_worktree(todo!("TODO kb"), path, false, cx)
+                        let task = breakpoint_list
+                            .update(cx, |breakpoint_list, cx| {
+                                let parent = breakpoint_list.session.read(cx).worktree().map(|worktree| worktree.read(cx).id());
+                                breakpoint_list.worktree_store.update(cx, |worktree_store, cx| {
+                                    worktree_store.find_or_create_worktree(parent, path, false, cx)
                                 })
                             })
                             .ok()?;
@@ -345,7 +346,7 @@ impl LineBreakpoint {
                             .spawn(cx, async move |cx| {
                                 let (worktree, relative_path) = task.await?;
                                 let worktree_id = worktree.update(cx, |this, _| this.id())?;
-                                let item = weak
+                                let item = breakpoint_list
                                     .update_in(cx, |this, window, cx| {
                                         this.workspace.update(cx, |this, cx| {
                                             this.open_path(

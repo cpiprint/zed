@@ -65,10 +65,15 @@ impl ModuleList {
     fn open_module(&mut self, path: Arc<Path>, window: &mut Window, cx: &mut Context<Self>) {
         cx.spawn_in(window, async move |this, cx| {
             let (worktree, relative_path) = this
-                .update(cx, |this, cx| {
-                    this.workspace.update(cx, |workspace, cx| {
-                        workspace.project().update(cx, |this, cx| {
-                            this.find_or_create_worktree(todo!("TODO kb"), &path, false, cx)
+                .update(cx, |module_list, cx| {
+                    let parent = module_list
+                        .session
+                        .read(cx)
+                        .worktree()
+                        .map(|worktree| worktree.read(cx).id());
+                    module_list.workspace.update(cx, |workspace, cx| {
+                        workspace.project().update(cx, |project, cx| {
+                            project.find_or_create_worktree(parent, &path, false, cx)
                         })
                     })
                 })??

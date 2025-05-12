@@ -262,10 +262,15 @@ impl StackFrameList {
         let stack_frame_id = stack_frame.id;
         cx.spawn_in(window, async move |this, cx| {
             let (worktree, relative_path) = this
-                .update(cx, |this, cx| {
-                    this.workspace.update(cx, |workspace, cx| {
-                        workspace.project().update(cx, |this, cx| {
-                            this.find_or_create_worktree(todo!("TODO kb"), &abs_path, false, cx)
+                .update(cx, |stack_frame_list, cx| {
+                    let parent = stack_frame_list
+                        .session
+                        .read(cx)
+                        .worktree()
+                        .map(|worktree| worktree.read(cx).id());
+                    stack_frame_list.workspace.update(cx, |workspace, cx| {
+                        workspace.project().update(cx, |project, cx| {
+                            project.find_or_create_worktree(parent, &abs_path, false, cx)
                         })
                     })
                 })??
