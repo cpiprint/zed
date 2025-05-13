@@ -36,7 +36,7 @@ struct ServersForWorktree {
 }
 
 pub struct LanguageServerTree {
-    manifest_tree: Entity<ManifestTree>,
+    pub manifest_tree: Entity<ManifestTree>,
     instances: BTreeMap<WorktreeId, ServersForWorktree>,
     attach_kind_cache: HashMap<LanguageServerName, Attach>,
     languages: Arc<LanguageRegistry>,

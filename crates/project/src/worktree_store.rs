@@ -170,6 +170,7 @@ impl WorktreeStore {
         visible: bool,
         cx: &mut Context<Self>,
     ) -> Task<Result<(Entity<Worktree>, PathBuf)>> {
+        // TODO kb check for other thing in the lsp_store
         let abs_path = abs_path.as_ref();
         if let Some((tree, relative_path)) = self.find_worktree(abs_path, cx) {
             Task::ready(Ok((tree, relative_path)))

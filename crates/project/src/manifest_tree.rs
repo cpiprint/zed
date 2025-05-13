@@ -8,14 +8,12 @@ mod path_trie;
 mod server_tree;
 
 use std::{
-    borrow::Borrow,
-    collections::{BTreeMap, hash_map::Entry},
-    ops::ControlFlow,
-    sync::Arc,
+    borrow::Borrow, cmp::Reverse, collections::BTreeMap, ops::ControlFlow, path::Path, sync::Arc,
 };
 
 use collections::HashMap;
 use gpui::{App, AppContext as _, Context, Entity, EventEmitter, Subscription};
+use itertools::Itertools;
 use language::{LspAdapterDelegate, ManifestName, ManifestQuery};
 pub use manifest_store::ManifestProviders;
 use path_trie::{LabelPresence, RootPathTrie, TriePath};
@@ -73,7 +71,7 @@ impl WorktreeRoots {
 }
 
 pub struct ManifestTree {
-    root_points: HashMap<WorktreeId, Entity<WorktreeRoots>>,
+    root_abs_points: HashMap<Arc<Path>, Entity<WorktreeRoots>>,
     worktree_store: Entity<WorktreeStore>,
     _subscriptions: [Subscription; 2],
 }
@@ -89,11 +87,11 @@ impl EventEmitter<ManifestTreeEvent> for ManifestTree {}
 impl ManifestTree {
     pub(crate) fn new(worktree_store: Entity<WorktreeStore>, cx: &mut App) -> Entity<Self> {
         cx.new(|cx| Self {
-            root_points: Default::default(),
+            root_abs_points: HashMap::default(),
             _subscriptions: [
                 cx.subscribe(&worktree_store, Self::on_worktree_store_event),
-                cx.observe_global::<SettingsStore>(|this, cx| {
-                    for (_, roots) in &mut this.root_points {
+                cx.observe_global::<SettingsStore>(|manifest_tree, cx| {
+                    for (_, roots) in &mut manifest_tree.root_abs_points {
                         roots.update(cx, |worktree_roots, _| {
                             worktree_roots.roots = RootPathTrie::new();
                         })
@@ -104,6 +102,7 @@ impl ManifestTree {
             worktree_store,
         })
     }
+
     fn root_for_path(
         &mut self,
         ProjectPath { worktree_id, path }: ProjectPath,
@@ -112,21 +111,39 @@ impl ManifestTree {
         cx: &mut App,
     ) -> BTreeMap<ManifestName, ProjectPath> {
         debug_assert_eq!(delegate.worktree_id(), worktree_id);
+
+        let Some(worktree) = self
+            .worktree_store
+            .read(cx)
+            .worktree_for_id(worktree_id, cx)
+        else {
+            return BTreeMap::default();
+        };
+        let worktree_abs_path = worktree.read(cx).abs_path();
+
         let mut roots = BTreeMap::from_iter(
             manifests.map(|manifest| (manifest, (None, LabelPresence::KnownAbsent))),
         );
-        let worktree_roots = match self.root_points.entry(worktree_id) {
-            Entry::Occupied(occupied_entry) => occupied_entry.get().clone(),
-            Entry::Vacant(vacant_entry) => {
-                let Some(worktree) = self
-                    .worktree_store
-                    .read(cx)
-                    .worktree_for_id(worktree_id, cx)
-                else {
-                    return Default::default();
-                };
+
+        let worktree_roots = match self
+            .root_abs_points
+            .iter()
+            .filter_map(
+                |(root_path, manifests)| match worktree_abs_path.strip_prefix(&root_path) {
+                    Ok(suffix) => Some((suffix.iter().count(), root_path, manifests)),
+                    Err(_) => None,
+                },
+            )
+            .sorted_by_key(|(suffix_len, _, _)| Reverse(*suffix_len))
+            .map(|(_, _, manifests)| manifests.clone())
+            .next()
+        {
+            Some(existing_worktree_roots) => existing_worktree_roots,
+            None => {
                 let roots = WorktreeRoots::new(self.worktree_store.clone(), worktree, cx);
-                vacant_entry.insert(roots).clone()
+                self.root_abs_points
+                    .insert(worktree_abs_path.clone(), roots.clone());
+                roots
             }
         };
 
@@ -201,16 +218,21 @@ impl ManifestTree {
             })
             .collect()
     }
+
     fn on_worktree_store_event(
         &mut self,
-        _: Entity<WorktreeStore>,
+        worktree_store: Entity<WorktreeStore>,
         evt: &WorktreeStoreEvent,
         cx: &mut Context<Self>,
     ) {
         match evt {
             WorktreeStoreEvent::WorktreeRemoved(_, worktree_id) => {
-                self.root_points.remove(&worktree_id);
-                cx.emit(ManifestTreeEvent::WorktreeRemoved(*worktree_id));
+                if let Some(worktree) = worktree_store.read(cx).worktree_for_id(*worktree_id, cx) {
+                    // TODO kb can there be uncleaned roots now?
+                    // Do we also need to clean up the common parent if there's one?
+                    self.root_abs_points.remove(&worktree.read(cx).abs_path());
+                    cx.emit(ManifestTreeEvent::WorktreeRemoved(*worktree_id));
+                };
             }
             _ => {}
         }

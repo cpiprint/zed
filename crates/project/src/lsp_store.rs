@@ -2252,6 +2252,10 @@ impl LocalLspStore {
         buffer_handle: &Entity<Buffer>,
         cx: &mut Context<LspStore>,
     ) {
+        // TODO kb try find a manifest that corresponds to a particular buffer's path
+        // let a = self.lsp_tree.read(cx).manifest_tree.read(cx).;
+        //
+
         let buffer = buffer_handle.read(cx);
         let buffer_id = buffer.remote_id();
 
