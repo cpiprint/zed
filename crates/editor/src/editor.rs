@@ -5309,7 +5309,7 @@ impl Editor {
                                     )),
                                 });
                         let debug_scenarios = editor.update(cx, |editor, cx| {
-                            if cx.has_flag::<DebuggerFeatureFlag>() {
+                            if true || cx.has_flag::<DebuggerFeatureFlag>() {
                                 maybe!({
                                     let project = editor.project.as_ref()?;
                                     let dap_store = project.read(cx).dap_store();
@@ -9353,9 +9353,9 @@ impl Editor {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        if !cx.has_flag::<DebuggerFeatureFlag>() {
-            return;
-        }
+        // if !cx.has_flag::<DebuggerFeatureFlag>() {
+        //     return;
+        // }
         let source = self
             .buffer
             .read(cx)

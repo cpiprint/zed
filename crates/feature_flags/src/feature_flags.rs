@@ -80,6 +80,11 @@ impl FeatureFlag for NotebookFeatureFlag {
 pub struct DebuggerFeatureFlag {}
 impl FeatureFlag for DebuggerFeatureFlag {
     const NAME: &'static str = "debugger";
+
+    // FIXME
+    fn enabled_for_all() -> bool {
+        true
+    }
 }
 
 pub struct ThreadAutoCaptureFeatureFlag {}
